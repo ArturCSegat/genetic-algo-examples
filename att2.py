@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 CROMOSSOME_SIZE = 32
-POPULATION_SIZE = 100
-GENERATION_COUNT = 80
+POPULATION_SIZE = 1000 
+GENERATION_COUNT = 40
 
 def avaliate(decoded_cromossome):
     absolute_cosine = np.abs(np.cos(1.5 * decoded_cromossome))
@@ -17,11 +17,11 @@ def cromossome_to_decimal(cromossome):
     return int(''.join(map(str, cromossome)), 2)
 
 
-def decode(binary_cromossome):
+def decode(decimal_cromossome):
     circle_ratio = 4 * np.pi
     binary_max = int('1' * CROMOSSOME_SIZE, 2)
     scaling_factor = circle_ratio / binary_max
-    return scaling_factor * binary_cromossome - (2 * np.pi)
+    return scaling_factor * decimal_cromossome - (2 * np.pi)
 
 
 def generate_population():
@@ -97,7 +97,8 @@ plt.show()
 pop = generate_population()
 av_pop = avaliate_population(pop)
 for i in range(GENERATION_COUNT):
-    print(str(i) + ": " + str(calculate_average(av_pop)))
+    average = calculate_average(av_pop)
+    print(str(i) + ": " + str(average))
 # Clear previous points and plot new generation
     plt.clf()
     plt.plot(x, y)
@@ -107,7 +108,7 @@ for i in range(GENERATION_COUNT):
         plt.plot(decoded_value, fitness, 'ro', markersize=5)
     plt.xlabel('x')
     plt.ylabel('Evaluated x')
-    plt.title('Generic Genetic Algorithm - Generation ' + str(i))
+    plt.title('Generic Genetic Algorithm - Generation ' + str(i) + ' - Média ' + str(average))
     plt.grid(True)
     plt.draw()
     plt.pause(0.5)
