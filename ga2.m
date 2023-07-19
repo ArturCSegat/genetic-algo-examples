@@ -65,7 +65,6 @@ for  geracao = 1 : numGera
    soma = sum((avaliaPop+minimo));
    if soma > 0
       roleta = (avaliaPop(ordena(1))+minimo)/soma;
-      roleta
       for i = 2 : tamPop
          roleta(i) = (avaliaPop(ordena(i))+minimo)/soma + roleta(i-1);
       end

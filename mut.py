@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 CROMOSSOME_SIZE = 32
 POPULATION_SIZE = 1000
 GENERATION_COUNT = 40
+MUTATION_RATE = 0.005
 
 def avaliate(decoded_cromossome):
     absolute_cosine = np.abs(np.cos(1.5 * decoded_cromossome))
@@ -22,6 +23,16 @@ def decode(decimal_cromossome):
     binary_max = int('1' * CROMOSSOME_SIZE, 2)
     scaling_factor = circle_ratio / binary_max
     return scaling_factor * decimal_cromossome - (2 * np.pi)
+
+
+def mutate_cromossome(cromossome):
+    for gene_i in range(len(cromossome)):
+        shot = round(random.uniform(MUTATION_RATE, 1), len(str(MUTATION_RATE).split(".")[1])) ## weird len() counts the decimal points of MUTATION_RATE
+        if shot <= MUTATION_RATE:
+            if cromossome[gene_i] == 1:
+                cromossome[gene_i] = 0
+            elif cromossome[gene_i] == 0:
+                cromossome[gene_i] = 1
 
 
 def generate_population():
@@ -62,6 +73,8 @@ def combine_parents(p1, p2):
         else:
             child2[i] = p2[i]
 
+    mutate_cromossome(child1)
+    mutate_cromossome(child2)
     return child1, child2
 
 
@@ -99,7 +112,7 @@ av_pop = avaliate_population(pop)
 for i in range(GENERATION_COUNT):
     average = calculate_average(av_pop)
     print(str(i) + ": " + str(average))
-# Clear previous points and plot new generation
+    
     plt.clf()
     plt.plot(x, y)
     for ind in pop:
@@ -115,6 +128,5 @@ for i in range(GENERATION_COUNT):
 
     pop, av_pop = generate_generation(pop, av_pop)
 
-plt.ioff()  # Disable interactive mode
+plt.ioff()
 plt.show()
-
