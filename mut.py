@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 CROMOSSOME_SIZE = 32
-POPULATION_SIZE = 1000
+POPULATION_SIZE = 500
 GENERATION_COUNT = 40
-MUTATION_RATE = 0.005
+MUTATION_RATE = 0.0
+ELITISM_PERCENTAGE = 0 
 
 def avaliate(decoded_cromossome):
     absolute_cosine = np.abs(np.cos(1.5 * decoded_cromossome))
@@ -26,8 +27,9 @@ def decode(decimal_cromossome):
 
 
 def mutate_cromossome(cromossome):
+    decimal_points = len(str(MUTATION_RATE).split(".")[1])
     for gene_i in range(len(cromossome)):
-        shot = round(random.uniform(MUTATION_RATE, 1), len(str(MUTATION_RATE).split(".")[1])) ## weird len() counts the decimal points of MUTATION_RATE
+        shot = round(random.uniform(1/pow(10, decimal_points), 1), decimal_points)
         if shot <= MUTATION_RATE:
             if cromossome[gene_i] == 1:
                 cromossome[gene_i] = 0
@@ -46,14 +48,14 @@ def generate_population():
 def avaliate_population(population):
     avaliated_population = []
     for i in range(0, POPULATION_SIZE):
-            avaliated_population.append((i, avaliate(decode(cromossome_to_decimal(population[i])))))
+            avaliated_population.append((avaliate(decode(cromossome_to_decimal(population[i]))), i))
     return avaliated_population
 
 
 def tournament(population, avaliated_population, tournament_size=4):
     participants = random.sample(avaliated_population, tournament_size)
-    winner = max(participants, key= lambda x: x[1])
-    winner_comossome = population[winner[0]]
+    winner = max(participants, key= lambda x: x[0])
+    winner_comossome = population[winner[1]]
     return winner_comossome
 
 
@@ -80,6 +82,10 @@ def combine_parents(p1, p2):
 
 def generate_generation(population, avaliated_population):
     offspring = []
+    # 10% of new pop elite of old pop
+    sorted_pairs = sorted(avaliated_population, reverse=True)
+    for pair in sorted_pairs[:(POPULATION_SIZE // 100) * ELITISM_PERCENTAGE]:
+        offspring.append(population[pair[1]])
     while len(offspring) < POPULATION_SIZE:
         parent1 = tournament(population, avaliated_population)
         parent2 = tournament(population, avaliated_population)
@@ -88,11 +94,13 @@ def generate_generation(population, avaliated_population):
         child1, child2 = combine_parents(parent1, parent2)
         offspring.append(child1)
         offspring.append(child2)
+
+
     return offspring, avaliate_population(offspring)
 
 
 def calculate_average(avaliated_population):
-    return sum(value[1] for value in avaliated_population) / len(avaliated_population)
+    return sum(value[0] for value in avaliated_population) / len(avaliated_population)
 
 
 x = np.arange(-2 * np.pi, 2 * np.pi, 0.01)
@@ -112,7 +120,7 @@ av_pop = avaliate_population(pop)
 for i in range(GENERATION_COUNT):
     average = calculate_average(av_pop)
     print(str(i) + ": " + str(average))
-    
+
     plt.clf()
     plt.plot(x, y)
     for ind in pop:
