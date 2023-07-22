@@ -161,21 +161,20 @@ Generation * reproduce_generation(Generation * g){
         Cromossome ** children = crossover_parents(parent1,parent2);
         (*offspring)[i] = children[0];
         (*offspring)[i + POPULATION_SIZE / 2] = children[1];
-        free(children);
+        // free does not free the offsprinf, jut the container
+        /* free(children); */
     }
     Generation * gen = malloc(sizeof(Generation));
-    free_population(g->pop);
-    free(g->av_pop);
     gen->pop = offspring;
     gen->av_pop = avaliate_population(offspring);
     return gen;
 }
 
-Cromossome * best_individual(Population * p){
+Cromossome * best_individual(Generation * g){
     int best_index = 0;
     int best_value = 0;
-    AV_Population * av_pop = avaliate_population(p);
-    Population * pop = p;
+    AV_Population * av_pop = g->av_pop;
+    Population * pop = g->pop;
     for (int i = 0; i<POPULATION_SIZE; i++) {
         if ((*av_pop)[i].avaliation > best_value) {
             best_index = (*av_pop)[i].index_in_pop;
@@ -187,30 +186,29 @@ Cromossome * best_individual(Population * p){
 
 int main(){
     srand( time(NULL) );
-    
-    Generation * current = malloc(sizeof(Generation));
+
+    Generation * first_gen = malloc(sizeof(Generation));
     Population * p = new_population();
-    current->pop = p;
-    current->av_pop = avaliate_population(p);
-
-    Cromossome * b1 = best_individual(p);
-    print_cromossome(b1);
-    printf("Value: %d\n", avaliate_cromossome(b1));
-
-    printf("a\n");
-    for (int i = 0; i < GENERATION_COUNT; i++){
-        current = reproduce_generation(current);
-    }
-    
-    printf("b\n");
-
-    Cromossome * b2 = best_individual(current->pop);
-    print_cromossome(b2);
-    printf("Value: %d\n", avaliate_cromossome(b2));
-
-    printf("c\n");
-
-    free_population(current->pop);
-    free(current->av_pop);
-    free(current);
+    first_gen->pop  = p;
+    first_gen->av_pop = avaliate_population(p);
+    Generation * second_gen  =reproduce_generation(first_gen);
+    print_cromossome(best_individual(first_gen));
+    print_cromossome(best_individual(second_gen));
+    free_generation(first_gen);
+    free_generation(second_gen);
+    /* Cromossome * best = best_individual(first_gen); */
+    /* print_cromossome(best); */
+    /* printf("Best: %d\n", avaliate_cromossome(best)); */
+    /*  */
+    /* for (int i = 0; i<GENERATION_COUNT; i++) { */
+    /*     first_gen = reproduce_generation(first_gen); */
+    /* } */
+    /*  */
+    /* Cromossome * best_2 = best_individual(first_gen); */
+    /* print_cromossome(best_2); */
+    /* printf("Best: %d\n", avaliate_cromossome(best_2)); */
+    /*  */
+    /* free_population(first_gen->pop); */
+    /* free(first_gen->av_pop); */
+    /* free(first_gen); */
 }
