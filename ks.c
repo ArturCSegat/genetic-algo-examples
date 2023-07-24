@@ -3,9 +3,9 @@
 #include <time.h>
 
 #define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 50
-#define GENERATION_COUNT 40
-#define TOURNAMENT_SIZE 8
+#define POPULATION_SIZE 5000
+#define GENERATION_COUNT 90
+#define TOURNAMENT_SIZE 16
 #define MAX_CAPACITY 20 // kg
 
 typedef struct Box{
@@ -81,6 +81,7 @@ int avaliate_cromossome(Cromossome * c){
         if ((*c)[i] == 1){
             weight_sum += boxes[i].weight;
             if (weight_sum > MAX_CAPACITY){
+                free(boxes);
                 return 0;
             }
             value_sum += boxes[i].value;
@@ -111,7 +112,7 @@ AV_Population * avaliate_population(Population * pop){
 Cromossome * run_tournament(Population * pop, AV_Population * av_pop){
     AV_Cromossome participants[TOURNAMENT_SIZE];
     int best_score = 0;
-    int best_index;
+    int best_index = 0;
     for (int i = 0; i<TOURNAMENT_SIZE; i++) {
         participants[i] = (*av_pop)[rand() % POPULATION_SIZE];
         if (participants[i].avaliation > best_score){
@@ -164,18 +165,17 @@ Generation * reproduce_generation(Generation * g){
         free(children);
     }
     Generation * gen = malloc(sizeof(Generation));
-    free_population(g->pop);
-    free(g->av_pop);
+    free_generation(g);
     gen->pop = offspring;
     gen->av_pop = avaliate_population(offspring);
     return gen;
 }
 
-Cromossome * best_individual(Population * p){
+Cromossome * best_individual(Generation * g){
     int best_index = 0;
     int best_value = 0;
-    AV_Population * av_pop = avaliate_population(p);
-    Population * pop = p;
+    AV_Population * av_pop = g->av_pop;
+    Population * pop = g->pop;
     for (int i = 0; i<POPULATION_SIZE; i++) {
         if ((*av_pop)[i].avaliation > best_value) {
             best_index = (*av_pop)[i].index_in_pop;
@@ -193,7 +193,7 @@ int main(){
     current->pop = p;
     current->av_pop = avaliate_population(p);
 
-    Cromossome * b1 = best_individual(p);
+    Cromossome * b1 = best_individual(current);
     print_cromossome(b1);
     printf("Value: %d\n", avaliate_cromossome(b1));
 
@@ -204,13 +204,11 @@ int main(){
     
     printf("b\n");
 
-    Cromossome * b2 = best_individual(current->pop);
+    Cromossome * b2 = best_individual(current);
     print_cromossome(b2);
     printf("Value: %d\n", avaliate_cromossome(b2));
 
     printf("c\n");
 
-    free_population(current->pop);
-    free(current->av_pop);
-    free(current);
+    free_generation(current);
 }
