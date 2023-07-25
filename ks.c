@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
 
 #define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 5000
-#define GENERATION_COUNT 90
-#define TOURNAMENT_SIZE 16
+#define POPULATION_SIZE 50 
+#define GENERATION_COUNT 40
+#define TOURNAMENT_SIZE 8
+#define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
 
 typedef struct Box{
@@ -25,7 +27,7 @@ Box * get_boxes(){
     Box * boxes = malloc(sizeof(Box) * 6);
     boxes[0] = newBox(7, 10);
     boxes[1] = newBox(3, 5);
-    boxes[2] = newBox(1, 3);
+    boxes[2] = newBox(1, 2);
     boxes[3] = newBox(9, 11);
     boxes[4] = newBox(10, 15);
     boxes[5] = newBox(5, 7);
@@ -51,6 +53,41 @@ void print_cromossome(Cromossome * c){
     printf(" ]\n");
 }
 
+int avaliate_cromossome(Cromossome * c){
+    int value_sum = 0;
+    int weight_sum = 0;
+    Box * boxes = get_boxes();
+    for (int i = 0; i < CROMOSSOME_LEN; i++) {
+        if ((*c)[i] == 1){
+            weight_sum += boxes[i].weight;
+            if (weight_sum > MAX_CAPACITY){
+                free(boxes);
+                return 0;
+            }
+            value_sum += boxes[i].value;
+        }
+    }
+    free(boxes);
+    return value_sum;
+}
+
+
+void mutate_cromossome(Cromossome * c){
+    for (int i = 0; i < CROMOSSOME_LEN; i++){
+        // random float between 0 and 1
+        float shot = (float)rand() / RAND_MAX;
+        if (shot <= MUTATION_RATE) {
+            if ((*c)[i] == 1){
+                (*c)[i] = 0;
+            } 
+            else if ((*c)[i] == 0){
+                (*c)[i] = 1;
+            } 
+        }
+    }
+    
+}
+
 void free_comossome(Cromossome *c){
     free(c);
 }
@@ -73,23 +110,7 @@ void free_population(Population * pop){
     free(*pop);
 }
 
-int avaliate_cromossome(Cromossome * c){
-    int value_sum = 0;
-    int weight_sum = 0;
-    Box * boxes = get_boxes();
-    for (int i = 0; i < CROMOSSOME_LEN; i++) {
-        if ((*c)[i] == 1){
-            weight_sum += boxes[i].weight;
-            if (weight_sum > MAX_CAPACITY){
-                free(boxes);
-                return 0;
-            }
-            value_sum += boxes[i].value;
-        }
-    }
-    free(boxes);
-    return value_sum;
-}
+
 
 typedef struct avaliated_cromossome {
     int avaliation;
@@ -139,6 +160,8 @@ Cromossome ** crossover_parents(Cromossome * p1, Cromossome * p2){
     // p1, p2 are freed by the caller when g->pop is freed
     pair[0] = child1;
     pair[1] = child2;
+    mutate_cromossome(pair[0]);
+    mutate_cromossome(pair[1]);
     return pair;
 }
 
@@ -197,18 +220,13 @@ int main(){
     print_cromossome(b1);
     printf("Value: %d\n", avaliate_cromossome(b1));
 
-    printf("a\n");
     for (int i = 0; i < GENERATION_COUNT; i++){
         current = reproduce_generation(current);
     }
-    
-    printf("b\n");
 
     Cromossome * b2 = best_individual(current);
     print_cromossome(b2);
     printf("Value: %d\n", avaliate_cromossome(b2));
-
-    printf("c\n");
 
     free_generation(current);
 }
