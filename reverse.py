@@ -6,7 +6,7 @@ CROMOSSOME_SIZE = 32
 POPULATION_SIZE = 500
 GENERATION_COUNT = 40
 MUTATION_RATE = 0.0001
-ELITISM_PERCENTAGE = 0 
+DEATH_RATIO = 3.5
 
 def avaliate(decoded_cromossome):
     absolute_cosine = np.abs(np.cos(1.5 * decoded_cromossome))
@@ -48,14 +48,28 @@ def generate_population():
 def avaliate_population(population):
     avaliated_population = []
     for i in range(0, POPULATION_SIZE):
-            avaliated_population.append((avaliate(decode(cromossome_to_decimal(population[i]))), i))
+            avaliated_population.append([avaliate(decode(cromossome_to_decimal(population[i]))), i])
     return avaliated_population
 
 
 def tournament(population, avaliated_population, tournament_size=4):
-    participants = random.sample(avaliated_population, tournament_size)
-    winner = max(participants, key= lambda x: x[0])
-    winner_comossome = population[winner[1]]
+    participants = []
+    while len(participants) < tournament_size:
+        # using indexes to ignore dead individuals
+        index = random.randint(0, POPULATION_SIZE - 1)
+        p = avaliated_population[index]
+        if p[1] == None:
+            continue
+        participants.append(index)
+
+    winner = max(participants, key=lambda x: avaliated_population[x][0])
+    loser = min(participants, key=lambda x: avaliated_population[x][0])
+    
+    # if loser's score is less than DR fractoin of the winner's kill the loser
+    if avaliated_population[loser][0] * DEATH_RATIO < avaliated_population[winner][0]:
+       avaliated_population[loser][1] = None
+
+    winner_comossome = population[avaliated_population[winner][1]]
     return winner_comossome
 
 
@@ -82,10 +96,6 @@ def combine_parents(p1, p2):
 
 def generate_generation(population, avaliated_population):
     offspring = []
-    # 10% of new pop elite of old pop
-    sorted_pairs = sorted(avaliated_population, reverse=True)
-    for pair in sorted_pairs[:(POPULATION_SIZE // 100) * ELITISM_PERCENTAGE]:
-        offspring.append(population[pair[1]])
     while len(offspring) < POPULATION_SIZE:
         parent1 = tournament(population, avaliated_population)
         parent2 = tournament(population, avaliated_population)
@@ -138,3 +148,4 @@ for i in range(GENERATION_COUNT):
 
 plt.ioff()
 plt.show()
+
