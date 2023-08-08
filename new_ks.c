@@ -4,8 +4,8 @@
 #include <limits.h>
 
 #define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 5000
-#define GENERATION_COUNT 4000
+#define POPULATION_SIZE 500
+#define GENERATION_COUNT 40
 #define TOURNAMENT_SIZE 8
 #define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
@@ -39,7 +39,6 @@ typedef int Cromossome[CROMOSSOME_LEN];
 Cromossome * new_random_cromossome(){
     Cromossome * c = malloc(sizeof(Cromossome));
     for (int i = 0; i < CROMOSSOME_LEN; i++) {
-        // random number either 1 or 0
         (*c)[i] = rand() % 2;
     }
     return c;
@@ -110,17 +109,12 @@ void free_population(Population * pop){
     free(*pop);
 }
 
-
-
 typedef struct avaliated_cromossome {
     int avaliation;
     int index_in_pop;
 }AV_Cromossome;
 
 typedef AV_Cromossome AV_Population[POPULATION_SIZE];
-
-
-
 
 
 typedef struct generation{
@@ -143,14 +137,13 @@ void free_generation(Generation * g){
 }
 
 int run_tournament(Generation * g){
-    AV_Cromossome participants[TOURNAMENT_SIZE];
     int best_score = 0;
     int best_index = 0;
     for (int i = 0; i<TOURNAMENT_SIZE; i++) {
-        participants[i] = (*g->av_pop)[rand() % POPULATION_SIZE];
-        if (participants[i].avaliation > best_score){
-            best_index = participants[i].index_in_pop;
-            best_score = participants[i].avaliation;
+        AV_Cromossome participant = (*g->av_pop)[rand() % POPULATION_SIZE];
+        if (participant.avaliation > best_score){
+            best_index = participant.index_in_pop;
+            best_score = participant.avaliation;
         }
     }
     return best_index;
@@ -194,14 +187,8 @@ void reproduce_generation(Generation * g, Population * buffer, Cromossome * swap
         // to return g to its original state
         // stores modified parents in buffer
 
-        // (*g->pop)[p1_idx] = (*buffer)[i];
-        // (*g->pop)[p2_idx] =  (*buffer)[i + POPULATION_SIZE / 2];
-
         copy_cromossome((*buffer)[i], (*g->pop)[p1_idx]);
         copy_cromossome((*buffer)[i + POPULATION_SIZE / 2], (*g->pop)[p2_idx]);
-
-        // (*buffer)[i] = swap_buffer[0];
-        // (*buffer)[i + POPULATION_SIZE / 2] = swap_buffer[1];
 
         copy_cromossome(swap_buffer[0], (*buffer)[i]);
         copy_cromossome(swap_buffer[1], (*buffer)[i + POPULATION_SIZE / 2]);
@@ -240,7 +227,6 @@ int main(){
     for (int i = 0; i < POPULATION_SIZE; i++) {
         (*buffer)[i] = malloc(sizeof(Cromossome));
     }
-
     Cromossome * swap_buffer[2] = {malloc(sizeof(Cromossome)), malloc(sizeof(Cromossome))};
 
     Cromossome * b1 = best_individual(current);
@@ -254,20 +240,6 @@ int main(){
     Cromossome * b2 = best_individual(current);
     print_cromossome(b2);
     printf("Value: %d\n", avaliate_cromossome(b2));
-
-    // printf("1:\n");
-    // for (int i = 0; i < POPULATION_SIZE; i++ ) {
-    //     print_cromossome((*current->pop)[i]);
-    // }
-    // reproduce_generation(current, buffer, swap_buffer);
-    // printf("2:\n");
-    // for (int i = 0; i < POPULATION_SIZE; i++ ) {
-    //     print_cromossome((*current->pop)[i]);
-    // }
-    // printf("1:\n");
-    // for (int i = 0; i < POPULATION_SIZE; i++ ) {
-    //     print_cromossome((*buffer)[i]);
-    // }
 
     free_generation(current);
     free(swap_buffer[0]);
