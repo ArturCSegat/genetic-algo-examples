@@ -4,10 +4,10 @@
 #include <limits.h>
 
 #define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 50 
-#define GENERATION_COUNT 40
+#define POPULATION_SIZE 5000
+#define GENERATION_COUNT 400
 #define TOURNAMENT_SIZE 8
-#define MUTATION_RATE 0.001
+#define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
 
 typedef struct Box{

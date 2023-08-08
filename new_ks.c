@@ -4,8 +4,8 @@
 #include <limits.h>
 
 #define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 500
-#define GENERATION_COUNT 40
+#define POPULATION_SIZE 8
+#define GENERATION_COUNT 50
 #define TOURNAMENT_SIZE 8
 #define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
@@ -178,30 +178,48 @@ void reproduce_generation(Generation * g, Generation * buffer){
     for (int i = 0; i<POPULATION_SIZE / 2; i++) {
         Cromossome * parent1 = run_tournament(g);
         Cromossome * parent2 = run_tournament(g);
-
+        // printf("Parents: in G\n");
+        // print_cromossome(parent1);
+        // print_cromossome(parent2);
+        //
         copy_cromossome(parent1, (*buffer->pop)[i]);
         copy_cromossome(parent2, (*buffer->pop)[i + POPULATION_SIZE / 2]);
+        // printf("Parents: in B\n");
+        // print_cromossome((*buffer->pop)[i]);
+        // print_cromossome((*buffer->pop)[i + POPULATION_SIZE / 2]);
 
         // modifies parents in g
         crossover_parents(parent1, parent2);  
+        // printf("new Parents: in G\n");
+        // print_cromossome(parent1);
+        // print_cromossome(parent2);
         
-        Cromossome * temp1 = (*g->pop)[i] ;
-        Cromossome * temp2 = (*g->pop)[i + POPULATION_SIZE / 2];
+        // store reference to modyfied parents in g
+        Cromossome * temp1 = parent1;
+        Cromossome * temp2 = parent2;
+        // printf("Stores parents in T:\n");
+        // print_cromossome(temp1);
+        // print_cromossome(temp2);
         
         // swaps the pointers of the saved buffer and the main generation 
         // to return g to its original state
         // stores modified parents in buffer
         (*g->pop)[i] = (*buffer->pop)[i];
         (*g->pop)[i + POPULATION_SIZE / 2] =  (*buffer->pop)[i + POPULATION_SIZE / 2];
+        // printf("values: in G\n");
+        // print_cromossome((*g->pop)[i]);
+        // print_cromossome((*g->pop)[i + POPULATION_SIZE / 2]);
         (*buffer->pop)[i] = temp1;
         (*buffer->pop)[i + POPULATION_SIZE / 2] = temp2;
+        // printf("values: in B\n");
+        // print_cromossome((*buffer->pop)[i]);
+        // print_cromossome((*buffer->pop)[i + POPULATION_SIZE / 2]);
+        // printf("values: in G again\n");
+        // print_cromossome((*g->pop)[i]);
+        // print_cromossome((*g->pop)[i + POPULATION_SIZE / 2]);
     }
-    
-    // swaps pointers so g points to the contents of buffer and vice versa
-    Population * temp = g->pop;
-    g->pop = buffer->pop;
+    // updates the av_pop of g with the new pop
     avaliate_generation(g);
-    buffer->pop = temp;
 }
 
 Cromossome * best_individual(Generation * g){
@@ -236,18 +254,32 @@ int main(){
     }
     gen_buffer->av_pop = malloc(sizeof(AV_Population));
 
-    Cromossome * b1 = best_individual(current);
-    print_cromossome(b1);
-    printf("Value: %d\n", avaliate_cromossome(b1));
+    // Cromossome * b1 = best_individual(current);
+    // print_cromossome(b1);
+    // printf("Value: %d\n", avaliate_cromossome(b1));
+    //
+    // for (int i = 0; i < GENERATION_COUNT; i++){
+    //     reproduce_generation(current, gen_buffer);
+    // }
+    //
+    // Cromossome * b2 = best_individual(current);
+    // print_cromossome(b2);
+    // printf("Value: %d\n", avaliate_cromossome(b2));
 
-    for (int i = 0; i < GENERATION_COUNT; i++){
-        reproduce_generation(current, gen_buffer);
+    printf("1:\n");
+    for (int i = 0; i < POPULATION_SIZE; i++ ) {
+        print_cromossome((*current->pop)[i]);
+    }
+    reproduce_generation(current, gen_buffer);
+    printf("2:\n");
+    for (int i = 0; i < POPULATION_SIZE; i++ ) {
+        print_cromossome((*current->pop)[i]);
+    }
+    printf("1:\n");
+    for (int i = 0; i < POPULATION_SIZE; i++ ) {
+        print_cromossome((*gen_buffer->pop)[i]);
     }
 
-    Cromossome * b2 = best_individual(current);
-    print_cromossome(b2);
-    printf("Value: %d\n", avaliate_cromossome(b2));
-
-    free_generation(gen_buffer);
+    // free_generation(gen_buffer);
     free_generation(current);
 }
