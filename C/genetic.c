@@ -49,7 +49,7 @@ int main(){
    int ** inst = malloc(sizeof(int *)*2);
    inst[0] = malloc(sizeof(int)*INST_SIZE);  // lucro
    inst[1] = malloc(sizeof(int)*INST_SIZE);  // peso
-
+   
    inst[0][0] =  7;  inst[1][0] = 10;
    inst[0][1] =  3;  inst[1][1] =  5;
    inst[0][2] =  1;  inst[1][2] =  2;
@@ -63,7 +63,6 @@ int main(){
 
    // ==========================   cria populacao ============================
    Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
-
    create_pop(pop,inst);
 
 
