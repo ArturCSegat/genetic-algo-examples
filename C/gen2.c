@@ -94,35 +94,21 @@ void crossover (Individual * p1, Individual * p2) {
     }
 }
 
-void copy_cromo(Individual * src, Individual * dst) {
+void copy_cromo(Individual src, Individual * dst) {
     for (int i = 0; i < INST_SIZE; i++) {
         dst->crom[i] = dst->crom[i];
     }
 }
 
-void reproduce_pop(Individual ** pop, Individual * buffer_pop, int inst[2][INST_SIZE]) {
+void reproduce_pop(Individual * pop, Individual ** buffer_pop, int inst[2][INST_SIZE]) {
     for (int i = 0; i < POP_SIZE / 2; i++) {
-        int p1_idx = run_tournament(*pop);
-        int p2_idx = run_tournament(*pop);
+        int p1_idx = run_tournament(pop);
+        int p2_idx = run_tournament(pop);
 
+        copy_cromo(pop[p1_idx], &((*buffer_pop)[i]));
+        copy_cromo(pop[p2_idx], &((*buffer_pop)[i + POP_SIZE / 2]));
 
-        buffer_pop[i] = (*pop)[p1_idx];
-        buffer_pop[i + POP_SIZE / 2] = (*pop)[p2_idx];
-
-        crossover(&((*pop)[p1_idx]), &((*pop)[p2_idx]));
-
-        Individual temp = (*pop)[p1_idx];
-        (*pop)[p1_idx] = buffer_pop[i];
-        buffer_pop[i] = temp;
-
-        temp = (*pop)[p2_idx];
-        (*pop)[p2_idx] = buffer_pop[i + POP_SIZE / 2];
-        buffer_pop[i + POP_SIZE / 2] = temp;
-    }
-    *pop = buffer_pop;
-    
-    for (int i = 0; i < POP_SIZE; i++) {
-        avaliate_individual(&((*pop)[i]), inst);
+        crossover(&((*buffer_pop)[i]), &((*buffer_pop)[i + POP_SIZE / 2]));
     }
 }
 
@@ -174,11 +160,15 @@ int main(){
 
     Individual * buffer_pop = malloc(sizeof(Individual)*POP_SIZE);
 
+    Individual ** current = &pop;
     for (int i = 0; i< GENERATION_COUNT; i++) {
-        reproduce_pop(&pop, buffer_pop, inst);
+        reproduce_pop(*current, &buffer_pop, inst);
+        current = &buffer_pop;
+        for (int j = 0; j < POP_SIZE; j++) {
+            avaliate_individual(&((*current)[j]), inst);
+        }
     }
     printf("\n");
-    printf("Average %d: %f\n", GENERATION_COUNT, average(pop));
-
-    free(pop);
+    printf("Average %d: %f\n", GENERATION_COUNT, average(*current));
+    free(*current);
 }
