@@ -105,33 +105,23 @@ void reproduce_pop(Individual ** pop, Individual * buffer_pop, int inst[2][INST_
         int p1_idx = run_tournament(*pop);
         int p2_idx = run_tournament(*pop);
 
-        // printf("first  g: ");
-        // print_individual((*pop)[p1_idx]);
 
         buffer_pop[i] = (*pop)[p1_idx];
         buffer_pop[i + POP_SIZE / 2] = (*pop)[p2_idx];
-        // printf("first  b: ");
-        // print_individual(buffer_pop[i]);
 
         crossover(&((*pop)[p1_idx]), &((*pop)[p2_idx]));
-        // printf("second g: ");
-        // print_individual((*pop)[p1_idx]);
 
         Individual temp = (*pop)[p1_idx];
         (*pop)[p1_idx] = buffer_pop[i];
         buffer_pop[i] = temp;
 
-        // printf("second b: ");
-        // print_individual(buffer_pop[i]);
-        // printf("third  g: ");
-        // print_individual((*pop)[p1_idx]);
-
-
         temp = (*pop)[p2_idx];
         (*pop)[p2_idx] = buffer_pop[i + POP_SIZE / 2];
         buffer_pop[i + POP_SIZE / 2] = temp;
     }
+
     *pop = buffer_pop;
+    
     for (int i = 0; i < POP_SIZE; i++) {
         avaliate_individual(&((*pop)[i]), inst);
     }
@@ -154,10 +144,6 @@ int main(){
     srand(time(NULL));
 
     // ==========================   cria instancia  ============================
-    // int ** inst = malloc(sizeof(int *)*2);
-    // inst[0] = malloc(sizeof(int)*INST_SIZE);  // lucro
-    // inst[1] = malloc(sizeof(int)*INST_SIZE);  // peso
-
     int inst[2][INST_SIZE];
 
     inst[0][0] =  7;  inst[1][0] = 10;
@@ -173,8 +159,7 @@ int main(){
 
     // ==========================   cria populacao ============================
     Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
-    // Individual pop[POP_SIZE];
-    create_pop(pop,inst);
+    create_pop(pop, inst);
 
     // for(int i = 0;  i < POP_SIZE; i++){
     //     int w = 0; 
@@ -185,6 +170,7 @@ int main(){
     //     }     
     //     printf("   fitness = %d   peso = %d \n",pop[i].f,w);     
     // }
+
     printf("Average 0: %f\n", average(pop));
 
     Individual * buffer_pop = malloc(sizeof(Individual)*POP_SIZE);
@@ -193,15 +179,6 @@ int main(){
         reproduce_pop(&pop, buffer_pop, inst);
     }
     printf("\n");
-    // for(int i = 0;  i < POP_SIZE; i++){
-    //     int w = 0; 
-    //     printf("Indivíduo %d = ", i+1);
-    //     for(int j = 0; j < INST_SIZE; j++){
-    //         printf("%d ",pop[i].crom[j]);
-    //         w += pop[i].crom[j] * inst[1][j];
-    //     }     
-    //     printf("   fitness = %d   peso = %d \n",pop[i].f,w);     
-    // }
     printf("Average %d: %f\n", GENERATION_COUNT, average(pop));
 
     free(pop);
