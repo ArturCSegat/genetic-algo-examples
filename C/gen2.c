@@ -94,9 +94,9 @@ void crossover (Individual * p1, Individual * p2) {
     }
 }
 
-void copy_cromo(Individual src, Individual * dst) {
+void copy_cromo(Individual * src, Individual * dst) {
     for (int i = 0; i < INST_SIZE; i++) {
-        dst->crom[i] = dst->crom[i];
+        dst->crom[i] = src->crom[i];
     }
 }
 
@@ -105,8 +105,8 @@ void reproduce_pop(Individual * pop, Individual ** buffer_pop, int inst[2][INST_
         int p1_idx = run_tournament(pop);
         int p2_idx = run_tournament(pop);
 
-        copy_cromo(pop[p1_idx], &((*buffer_pop)[i]));
-        copy_cromo(pop[p2_idx], &((*buffer_pop)[i + POP_SIZE / 2]));
+        copy_cromo(&(pop[p1_idx]), &((*buffer_pop)[i]));
+        copy_cromo(&(pop[p2_idx]), &((*buffer_pop)[i + POP_SIZE / 2]));
 
         crossover(&((*buffer_pop)[i]), &((*buffer_pop)[i + POP_SIZE / 2]));
     }
@@ -114,7 +114,7 @@ void reproduce_pop(Individual * pop, Individual ** buffer_pop, int inst[2][INST_
 
 
 float average(Individual * pop) {
-    float sum = 0.0;
+    float sum = 0;
     int count = 0;
 
     for (int i = 0; i < POP_SIZE; i++) {
@@ -142,10 +142,6 @@ int main(){
     inst[0][8] = 10;  inst[1][8] =  8; 
     inst[0][9] =  7;  inst[1][9] = 10;
 
-    // ==========================   cria populacao ============================
-    Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
-    create_pop(pop, inst);
-
     // for(int i = 0;  i < POP_SIZE; i++){
     //     int w = 0; 
     //     printf("Indivíduo %d = ", i+1);
@@ -155,20 +151,28 @@ int main(){
     //     }     
     //     printf("   fitness = %d   peso = %d \n",pop[i].f,w);     
     // }
+    // ==========================   cria populacao ============================
+    Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
+    create_pop(pop, inst);
+
 
     printf("Average 0: %f\n", average(pop));
 
     Individual * buffer_pop = malloc(sizeof(Individual)*POP_SIZE);
 
-    Individual ** current = &pop;
     for (int i = 0; i< GENERATION_COUNT; i++) {
-        reproduce_pop(*current, &buffer_pop, inst);
-        current = &buffer_pop;
+        reproduce_pop(pop, &buffer_pop, inst);
+        Individual * temp = &(*pop);
+        pop = buffer_pop;
+        buffer_pop = temp;
+
         for (int j = 0; j < POP_SIZE; j++) {
-            avaliate_individual(&((*current)[j]), inst);
+            avaliate_individual(&(pop[j]), inst);
         }
     }
     printf("\n");
-    printf("Average %d: %f\n", GENERATION_COUNT, average(*current));
-    free(*current);
+    printf("Average %d: %f\n", GENERATION_COUNT, average(pop));
+    free(pop);
+    free(buffer_pop);
 }
+
