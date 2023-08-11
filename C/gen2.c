@@ -119,7 +119,6 @@ void reproduce_pop(Individual ** pop, Individual * buffer_pop, int inst[2][INST_
         (*pop)[p2_idx] = buffer_pop[i + POP_SIZE / 2];
         buffer_pop[i + POP_SIZE / 2] = temp;
     }
-
     *pop = buffer_pop;
     
     for (int i = 0; i < POP_SIZE; i++) {
