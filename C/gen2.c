@@ -3,9 +3,9 @@
 #include <time.h>
 #include <limits.h>
 
-#define POP_SIZE 50
-#define GENERATION_COUNT 40
-#define TOURNAMENT_SIZE 4
+#define POP_SIZE 5000
+#define GENERATION_COUNT 400
+#define TOURNAMENT_SIZE 8
 #define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
 #define INST_SIZE 10

@@ -3,9 +3,9 @@
 #include <time.h>
 #include <limits.h>
 
-#define CROMOSSOME_LEN 6
-#define POPULATION_SIZE 500
-#define GENERATION_COUNT 40
+#define CROMOSSOME_LEN 10
+#define POPULATION_SIZE 5000
+#define GENERATION_COUNT 400
 #define TOURNAMENT_SIZE 8
 #define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
@@ -24,13 +24,17 @@ Box newBox(int v, int w){
 }
 
 Box * get_boxes(){
-    Box * boxes = malloc(sizeof(Box) * 6);
+    Box * boxes = malloc(sizeof(Box) * CROMOSSOME_LEN);
     boxes[0] = newBox(7, 10);
     boxes[1] = newBox(3, 5);
     boxes[2] = newBox(1, 2);
     boxes[3] = newBox(9, 11);
     boxes[4] = newBox(10, 15);
     boxes[5] = newBox(5, 7);
+    boxes[6] = newBox(7, 10);
+    boxes[7] = newBox(3, 5);
+    boxes[8] = newBox(1, 2);
+    boxes[9] = newBox(9, 11);
     return boxes;
 } 
 
