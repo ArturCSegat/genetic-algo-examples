@@ -4,21 +4,20 @@
 #include <limits.h>
 
 #define POP_SIZE 10
-#define GENERATION_COUNT 40
-#define TOURNAMENT_SIZE 8
+#define MAX_GENERATIONS 40
+#define TOURNAMENT_SIZE 3 
 #define MUTATION_RATE 0.0
 #define MAX_CAPACITY 20 // kg
 #define INST_SIZE 10
-
 
 typedef struct {
    int crom[INST_SIZE];
    int f;
 }Individual;
 
-
-void create_pop(Individual * pop, int ** inst){
+Individual *  create_pop(int ** inst){
    int lista[INST_SIZE],aux,weight,pos;
+   Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
 
    for (int i = 0; i < INST_SIZE; i++)  lista[i] = i;
 
@@ -40,12 +39,11 @@ void create_pop(Individual * pop, int ** inst){
          lista[INST_SIZE-j-1] = aux;
      }
    }
+   return pop;
 }
 
-int main(){
-   int i;
-
-   // ==========================   cria instancia  ============================
+int ** readInstance(){
+ // ==========================   cria instancia  ============================
    int ** inst = malloc(sizeof(int *)*2);
    inst[0] = malloc(sizeof(int)*INST_SIZE);  // lucro
    inst[1] = malloc(sizeof(int)*INST_SIZE);  // peso
@@ -61,18 +59,63 @@ int main(){
    inst[0][8] = 10;  inst[1][8] =  8; 
    inst[0][9] =  7;  inst[1][9] = 10;
 
-   // ==========================   cria populacao ============================
-   Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
-   create_pop(pop,inst);
+   return inst;
+   }
 
-
+void printPop(Individual *pop, int ** inst){
    for(int i = 0;  i < POP_SIZE; i++){
       int w = 0; 
-      printf("Indivíduo %d = ", i+1);
+      printf("Indivíduo %d = ", i);
       for(int j = 0; j < INST_SIZE; j++){
            printf("%d ",pop[i].crom[j]);
            w += pop[i].crom[j] * inst[1][j];
       }     
       printf("   fitness = %d   peso = %d \n",pop[i].f,w);     
    }
+
+   }
+
+void selection(Individual *pop, int *parents){   // Tournament
+   int parent, pos; 
+
+   for(int k = 0;  k < POP_SIZE;  k++){
+      if (k%2==1){ 
+         parents[k]  = rand() % (POP_SIZE-1);
+         if(parents[k] >= parents[k-1])
+            parents[k]+=1;
+         }else
+            parents[k]  = rand() % POP_SIZE;
+            
+
+      for(int i = 0; i < TOURNAMENT_SIZE-1; i++){
+         if (k%2==1){ 
+            pos  = rand() % (POP_SIZE-1);
+            if(pos >= parents[k-1])
+               pos+=1;
+            }else
+               pos  = rand() % POP_SIZE;
+         
+         if (pop[pos].f > pop[parents[k]].f)
+            parents[k] = pos;
+         }
+      }
+   }
+
+int main(){
+
+   int ** inst = readInstance();
+   int parents[POP_SIZE]; 
+
+   Individual * pop = create_pop(inst);
+   printPop(pop,inst);
+   
+   for (int i = 0; i < MAX_GENERATIONS; i++){
+      selection(pop,parents);
+      for(int j = 0; j < POP_SIZE; j++)
+         printf(" %d ",parents[j]);
+      printf("\n");   
+      }
+
+
+
 }
