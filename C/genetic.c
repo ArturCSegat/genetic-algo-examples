@@ -13,25 +13,26 @@
 typedef struct {
    int crom[INST_SIZE];
    int f;
+   int w;
 }Individual;
 
 Individual *  create_pop(int ** inst){
-   int lista[INST_SIZE],aux,weight,pos;
+   int lista[INST_SIZE],aux,pos;
    Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
 
    for (int i = 0; i < INST_SIZE; i++)  lista[i] = i;
 
    for(int i = 0; i < POP_SIZE; i++){
       pop[i].f = 0;
-      weight = 0;
+      pop[i].w= 0;
       for(int j = 0; j < INST_SIZE; j++){
          pos = rand()%(INST_SIZE-j);
          pop[i].crom[lista[pos]] = 0;
          if( rand()%2 == 0){
-            if (weight + inst[1][lista[pos]] <= MAX_CAPACITY){
+            if (pop[i].w+ inst[1][lista[pos]] <= MAX_CAPACITY){
                pop[i].crom[lista[pos]] = 1;
                pop[i].f +=  inst[0][lista[pos]]; 
-               weight += inst[1][lista[pos]];
+               pop[i].w+= inst[1][lista[pos]];
             }
          } 
          aux = lista[pos];
@@ -100,20 +101,83 @@ void selection(Individual *pop, int *parents){   // Tournament
          }
       }
    }
+      
+void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
+
+   int idleCap = MAX_CAPACITY - fea->w;
+   int g;
+
+   for(g = 0; g < INST_SIZE && ( !unfea->crom[g] || inst[1][g] > idleCap); g++)
+      
+   if( g < INST_SIZE){
+      for(int i = g+1; i < INST_SIZE; i++)
+          if(inst[1][i] > inst[1][g] && inst[1][i] < idleCap)
+             g = i;
+    
+  
+      unfea->crom[g] = 0;
+      unfea->f -= inst[0][g];
+      unfea->w -= inst[1][g];
+
+      fea->crom[g] = 1;
+      fea->f += inst[0][g];
+      fea->w += inst[1][g];
+   }
+}
+
+
+void crossover(Individual *pop, int *parents, Individual * offspring, int ** inst){
+   int pcut,k;
+
+   for(int i = 0; i < POP_SIZE; i+=2){
+      offspring[i].f = 0;
+      offspring[i].w = 0;
+      offspring[i+1].f = 0;
+      offspring[i+1].w = 0;
+      
+      pcut = rand()%(INST_SIZE-1);
+
+      for(k =0; k <= pcut; k++){
+         offspring[i].crom[k] = pop[parents[i]].crom[k];
+         offspring[i].f += offspring[i].crom[k] ? inst[0][k] : 0;
+         offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
+
+         offspring[i+1].crom[k] = pop[parents[i+1]].crom[k];
+         offspring[i+1].f += offspring[i].crom[k] ? inst[0][k] : 0;
+         offspring[i+1].w += offspring[i].crom[k] ? inst[1][k] : 0;
+         }
+      for(; k <  INST_SIZE; k++){
+         offspring[i].crom[k] = pop[parents[i+1]].crom[k];
+         offspring[i].f += offspring[i].crom[k] ? inst[0][k] : 0;
+         offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
+
+         offspring[i+1].crom[k] = pop[parents[i]].crom[k];
+         offspring[i+1].f += offspring[i].crom[k] ? inst[0][k] : 0;
+         offspring[i+1].w += offspring[i].crom[k] ? inst[1][k] : 0;
+         }
+
+        if(offspring[i].w > MAX_CAPACITY) 
+           repairOffspring(&offspring[i],&offspring[i+1],inst);
+        else if(offspring[i+1].w > MAX_CAPACITY)
+           repairOffspring(&offspring[i+1],&offspring[i],inst);
+
+      }
+   }
+
 
 int main(){
 
    int ** inst = readInstance();
    int parents[POP_SIZE]; 
+   Individual * offspring = malloc(sizeof(Individual)*POP_SIZE);
 
+  
+   //=========================== Genetic Algorithm =====================
    Individual * pop = create_pop(inst);
-   printPop(pop,inst);
    
    for (int i = 0; i < MAX_GENERATIONS; i++){
       selection(pop,parents);
-      for(int j = 0; j < POP_SIZE; j++)
-         printf(" %d ",parents[j]);
-      printf("\n");   
+      crossover(pop,parents,offspring,inst);
       }
 
 }
