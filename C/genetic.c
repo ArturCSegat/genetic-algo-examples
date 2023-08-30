@@ -106,23 +106,41 @@ void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
 
    int idleCap = MAX_CAPACITY - fea->w;
    int g;
+   
+   printf("%d %d\n",fea->w,unfea->w);
 
-   for(g = 0; g < INST_SIZE && ( !unfea->crom[g] || inst[1][g] > idleCap); g++)
+   do{
+      for(g = 0;  (g < INST_SIZE) && (!unfea->crom[g] || inst[1][g] > idleCap); g++); 
+
+      if( g < INST_SIZE){
+         for(int i = g+1; i < INST_SIZE; i++)
+            if(inst[1][i] > inst[1][g] && inst[1][i] < idleCap)
+               g = i;
       
-   if( g < INST_SIZE){
-      for(int i = g+1; i < INST_SIZE; i++)
-          if(inst[1][i] > inst[1][g] && inst[1][i] < idleCap)
-             g = i;
-    
-  
-      unfea->crom[g] = 0;
-      unfea->f -= inst[0][g];
-      unfea->w -= inst[1][g];
+   
+         unfea->crom[g] = 0;
+         unfea->f -= inst[0][g];
+         unfea->w -= inst[1][g];
 
-      fea->crom[g] = 1;
-      fea->f += inst[0][g];
-      fea->w += inst[1][g];
-   }
+         fea->crom[g] = 1;
+         fea->f += inst[0][g];
+         fea->w += inst[1][g];
+         }
+   }while (g < INST_SIZE && unfea->w > MAX_CAPACITY);
+
+   while (unfea->w > MAX_CAPACITY){
+      for(g = 0; !unfea->crom[g]; g++);
+      int cheap = g;
+      for(g++; g < INST_SIZE; g++){
+            if(unfea->crom[g] &&  inst[0][g] < inst[0][cheap])
+               cheap = g;
+         }
+      unfea->crom[g] = 0;
+      unfea->f -= inst[0][cheap];
+      unfea->w -= inst[1][cheap];
+      }
+   printf("%d %d\n\n",fea->w,unfea->w);
+
 }
 
 
@@ -143,8 +161,8 @@ void crossover(Individual *pop, int *parents, Individual * offspring, int ** ins
          offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
 
          offspring[i+1].crom[k] = pop[parents[i+1]].crom[k];
-         offspring[i+1].f += offspring[i].crom[k] ? inst[0][k] : 0;
-         offspring[i+1].w += offspring[i].crom[k] ? inst[1][k] : 0;
+         offspring[i+1].f += offspring[i+1].crom[k] ? inst[0][k] : 0;
+         offspring[i+1].w += offspring[i+1].crom[k] ? inst[1][k] : 0;
          }
       for(; k <  INST_SIZE; k++){
          offspring[i].crom[k] = pop[parents[i+1]].crom[k];
@@ -152,15 +170,14 @@ void crossover(Individual *pop, int *parents, Individual * offspring, int ** ins
          offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
 
          offspring[i+1].crom[k] = pop[parents[i]].crom[k];
-         offspring[i+1].f += offspring[i].crom[k] ? inst[0][k] : 0;
-         offspring[i+1].w += offspring[i].crom[k] ? inst[1][k] : 0;
+         offspring[i+1].f += offspring[i+1].crom[k] ? inst[0][k] : 0;
+         offspring[i+1].w += offspring[i+1].crom[k] ? inst[1][k] : 0;
          }
 
-        if(offspring[i].w > MAX_CAPACITY) 
-           repairOffspring(&offspring[i],&offspring[i+1],inst);
-        else if(offspring[i+1].w > MAX_CAPACITY)
-           repairOffspring(&offspring[i+1],&offspring[i],inst);
-
+      if(offspring[i].w > MAX_CAPACITY) 
+         repairOffspring(&offspring[i],&offspring[i+1],inst);
+      else if(offspring[i+1].w > MAX_CAPACITY)
+         repairOffspring(&offspring[i+1],&offspring[i],inst);
       }
    }
 
