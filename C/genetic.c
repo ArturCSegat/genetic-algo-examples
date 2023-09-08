@@ -119,12 +119,13 @@ void selection(Individual *pop, int *parents){   // Tournament
 
 void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
 
-    int idleCap = MAX_CAPACITY - fea->w;
+    int idleCap; 
     int g = 0;
 
 //    printf("%d %d\n",fea->w,unfea->w);
 
     do{
+        idleCap = MAX_CAPACITY - fea->w;
         // sets g to the index to the first 1 who's weight could fit in fea, if there is no 1 who could fit in fea g = INST_SIZE
         for(g= 0; g < INST_SIZE && ((!unfea->crom[g] && fea->crom[g]) || inst[1][g] > idleCap); g++); 
         
@@ -149,7 +150,6 @@ void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
     }while (g < INST_SIZE && unfea->w > MAX_CAPACITY);
     
     while (unfea->w > MAX_CAPACITY){
-//        printf("give up\n");
         for(g = 0; !(unfea->crom[g]); g++);
         int cheap = g;
         for(g++; g < INST_SIZE; g++){
@@ -159,6 +159,19 @@ void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
         unfea->crom[cheap] = 0;
         unfea->f -= inst[0][cheap];
         unfea->w -= inst[1][cheap];
+    }
+
+   while (fea->w > MAX_CAPACITY){
+//        printf("give up\n");
+        for(g = 0; !(fea->crom[g]); g++);
+        int cheap = g;
+        for(g++; g < INST_SIZE; g++){
+            if(fea->crom[g] &&  inst[0][g] < inst[0][cheap])
+                cheap = g;
+        }
+        fea->crom[cheap] = 0;
+        fea->f -= inst[0][cheap];
+        fea->w -= inst[1][cheap];
     }
 //    printf("%d %d\n",fea->w,unfea->w);
 
@@ -197,13 +210,12 @@ void crossover(Individual *pop, int *parents, Individual * offspring, Individual
             offspring[i+1].f += offspring[i+1].crom[k] ? inst[0][k] : 0;
             offspring[i+1].w += offspring[i+1].crom[k] ? inst[1][k] : 0;
         }
-
+       
         if(offspring[i].w > MAX_CAPACITY) 
             repairOffspring(&offspring[i],&offspring[i+1],inst);
         else if(offspring[i+1].w > MAX_CAPACITY)
             repairOffspring(&offspring[i+1],&offspring[i],inst);
     
-//        printf("%d %d\n",offspring[i].f,offspring[i+1].f);
 
         if((*bestOffspring)->f < offspring[i].f)
            *bestOffspring = &offspring[i];
@@ -216,7 +228,6 @@ void crossover(Individual *pop, int *parents, Individual * offspring, Individual
        
         if((*worstOffspring)->f > offspring[i+1].f)
            *worstOffspring = &offspring[i+1];
-//        printf("%d \n",(*worstOffspring)->w);
     }
 }
 
@@ -236,22 +247,22 @@ int main(){
     Individual *bestPop, *bestOffspring, *worstOffspring;
 
     unsigned seed = time(NULL);
-//    srand(seed);
-    srand(1694034314);
+    srand(seed);
+   // srand(1694204629);
 
     printf("Seed : %d\n",seed);
 
     //=========================== Genetic Algorithm =====================
     Individual * pop = create_pop(inst,&bestPop);
-    printPop(pop,inst);
-    printf("Best Individual:  fitness -> %d   weight -> %d\n",bestPop->f,bestPop->w);
+    //printPop(pop,inst);
+    //printf("Best Individual:  fitness -> %d   weight -> %d\n",bestPop->f,bestPop->w);
 
     for (int i = 0; i < MAX_GENERATIONS; i++){
         selection(pop,parents);
         crossover(pop,parents,offspring,&bestOffspring,&worstOffspring,inst);
-        printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
-        printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
-        updatedPop(&pop,&offspring);
+       updatedPop(&pop,&offspring);
     }
-
+    printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
+    printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
+ 
 }
