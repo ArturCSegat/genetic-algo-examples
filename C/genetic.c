@@ -10,11 +10,28 @@
 #define MAX_CAPACITY 20 // kg
 #define INST_SIZE 10
 
+#define F  0
+#define W  1
+
 typedef struct {
     int crom[INST_SIZE];
     int f;
     int w;
 }Individual;
+
+int checkSolution(Individual *ind,int ** inst){
+   int testW = 0;
+   for(int i = 0 ; i < INST_SIZE; i++){
+      testW += ind->crom[i] ? inst[W][i] : 0;
+      }
+
+   if(ind->w != testW){
+      printf("ERRO no calculo da capacidade\n");
+      return 0;
+      } 
+
+   return 1;
+   }
 
 Individual *  create_pop(int ** inst, Individual **bestPop){
     int lista[INST_SIZE],aux,pos;
@@ -42,6 +59,7 @@ Individual *  create_pop(int ** inst, Individual **bestPop){
             lista[INST_SIZE-j-1] = aux;
             
         }
+
         if((*bestPop)->f < pop[i].f)
             *bestPop = &pop[i];
     }
@@ -51,31 +69,22 @@ Individual *  create_pop(int ** inst, Individual **bestPop){
 int ** readInstance(){
     // ==========================   cria instancia  ============================
     int ** inst = malloc(sizeof(int *)*2);
-    inst[0] = malloc(sizeof(int)*INST_SIZE);  // lucro
-    inst[1] = malloc(sizeof(int)*INST_SIZE);  // peso
+    inst[F] = malloc(sizeof(int)*INST_SIZE);  // lucro
+    inst[W] = malloc(sizeof(int)*INST_SIZE);  // peso
 
-    inst[0][0] =  7;  inst[1][0] = 10;
-    inst[0][1] =  3;  inst[1][1] =  5;
-    inst[0][2] =  1;  inst[1][2] =  2;
-    inst[0][3] =  9;  inst[1][3] = 11;
-    inst[0][4] = 10;  inst[1][4] = 15; 
-    inst[0][5] =  5;  inst[1][5] =  7;
-    inst[0][6] =  7;  inst[1][6] =  7;
-    inst[0][7] =  9;  inst[1][7] =  6;
-    inst[0][8] = 10;  inst[1][8] =  8; 
-    inst[0][9] =  7;  inst[1][9] = 10;
+    inst[F][0] =  7;  inst[W][0] = 10;
+    inst[F][1] =  3;  inst[W][1] =  5;
+    inst[F][2] =  1;  inst[W][2] =  2;
+    inst[F][3] =  9;  inst[W][3] = 11;
+    inst[F][4] = 10;  inst[W][4] = 15; 
+    inst[F][5] =  5;  inst[W][5] =  7;
+    inst[F][6] =  7;  inst[W][6] =  7;
+    inst[F][7] =  9;  inst[W][7] =  6;
+    inst[F][8] = 10;  inst[W][8] =  8; 
+    inst[F][9] =  7;  inst[W][9] = 10;
 
     return inst;
 }
-
-int checSolution(Individual *ind){
-
-   if(ind->w > MAX_CAPACITY){
-      return 0;
-      } 
-
-   return 1;
-   }
 
 
 void printPop(Individual *pop, int ** inst){
@@ -127,53 +136,40 @@ void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
     do{
         idleCap = MAX_CAPACITY - fea->w;
         // sets g to the index to the first 1 who's weight could fit in fea, if there is no 1 who could fit in fea g = INST_SIZE
-        for(g= 0; g < INST_SIZE && ((!unfea->crom[g] && fea->crom[g]) || inst[1][g] > idleCap); g++); 
+        for(g= 0; g < INST_SIZE && (!unfea->crom[g] || fea->crom[g] || inst[1][g] > idleCap); g++); 
         
         // this check translates to if there is a valid gene in unfea
         if (g < INST_SIZE) {
             // now that its know a transfer is possile, finds the actual best gene to transfer
             for(int i = g+1; i < INST_SIZE; i++) {
-                if((inst[1][i] > inst[1][g] && inst[1][i] <= idleCap) && (unfea->crom[i] == 1 && fea->crom[i] == 0)) {
+                if((inst[W][i] > inst[W][g] && inst[W][i] <= idleCap) && (unfea->crom[i] == 1 && fea->crom[i] == 0)) {
                     g = i;
                     }
             }
 
 //            printf("g %d, gw %d, gv: %d, gv2: %d, ic: %d\n", g, inst[1][g], unfea->crom[g], fea->crom[g], idleCap);
+            if(unfea->crom[g] == 0 )  printf("ERRO ERRO \n\n\n");   
             unfea->crom[g] = 0;
-            unfea->f -= inst[0][g];
-            unfea->w -= inst[1][g];
+            unfea->f -= inst[F][g];
+            unfea->w -= inst[W][g];
 
             fea->crom[g] = 1;
-            fea->f += inst[0][g];
-            fea->w += inst[1][g];
+            fea->f += inst[F][g];
+            fea->w += inst[W][g];
         }
     }while (g < INST_SIZE && unfea->w > MAX_CAPACITY);
-    
+  
     while (unfea->w > MAX_CAPACITY){
         for(g = 0; !(unfea->crom[g]); g++);
         int cheap = g;
         for(g++; g < INST_SIZE; g++){
-            if(unfea->crom[g] &&  inst[0][g] < inst[0][cheap])
+            if(unfea->crom[g] &&  inst[F][g] < inst[F][cheap])
                 cheap = g;
         }
         unfea->crom[cheap] = 0;
-        unfea->f -= inst[0][cheap];
-        unfea->w -= inst[1][cheap];
+        unfea->f -= inst[F][cheap];
+        unfea->w -= inst[W][cheap];
     }
-
-   while (fea->w > MAX_CAPACITY){
-//        printf("give up\n");
-        for(g = 0; !(fea->crom[g]); g++);
-        int cheap = g;
-        for(g++; g < INST_SIZE; g++){
-            if(fea->crom[g] &&  inst[0][g] < inst[0][cheap])
-                cheap = g;
-        }
-        fea->crom[cheap] = 0;
-        fea->f -= inst[0][cheap];
-        fea->w -= inst[1][cheap];
-    }
-//    printf("%d %d\n",fea->w,unfea->w);
 
 }
 
@@ -194,28 +190,33 @@ void crossover(Individual *pop, int *parents, Individual * offspring, Individual
 
         for(k =0; k <= pcut; k++){
             offspring[i].crom[k] = pop[parents[i]].crom[k];
-            offspring[i].f += offspring[i].crom[k] ? inst[0][k] : 0;
-            offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
-
+            offspring[i].f += offspring[i].crom[k] ? inst[F][k] : 0;
+            offspring[i].w += offspring[i].crom[k] ? inst[W][k] : 0;
+            
             offspring[i+1].crom[k] = pop[parents[i+1]].crom[k];
-            offspring[i+1].f += offspring[i+1].crom[k] ? inst[0][k] : 0;
-            offspring[i+1].w += offspring[i+1].crom[k] ? inst[1][k] : 0;
+            offspring[i+1].f += offspring[i+1].crom[k] ? inst[F][k] : 0;
+            offspring[i+1].w += offspring[i+1].crom[k] ? inst[W][k] : 0;
         }
         for(; k <  INST_SIZE; k++){
             offspring[i].crom[k] = pop[parents[i+1]].crom[k];
-            offspring[i].f += offspring[i].crom[k] ? inst[0][k] : 0;
-            offspring[i].w += offspring[i].crom[k] ? inst[1][k] : 0;
+            offspring[i].f += offspring[i].crom[k] ? inst[F][k] : 0;
+            offspring[i].w += offspring[i].crom[k] ? inst[W][k] : 0;
 
             offspring[i+1].crom[k] = pop[parents[i]].crom[k];
-            offspring[i+1].f += offspring[i+1].crom[k] ? inst[0][k] : 0;
-            offspring[i+1].w += offspring[i+1].crom[k] ? inst[1][k] : 0;
+            offspring[i+1].f += offspring[i+1].crom[k] ? inst[F][k] : 0;
+            offspring[i+1].w += offspring[i+1].crom[k] ? inst[W][k] : 0;
         }
-       
-        if(offspring[i].w > MAX_CAPACITY) 
+      
+       if(offspring[i].w > MAX_CAPACITY) 
             repairOffspring(&offspring[i],&offspring[i+1],inst);
         else if(offspring[i+1].w > MAX_CAPACITY)
             repairOffspring(&offspring[i+1],&offspring[i],inst);
     
+        if(!checkSolution(&(offspring[i]),inst))
+         exit(0);
+        if(!checkSolution(&(offspring[i+1]),inst))
+         exit(0);
+
 
         if((*bestOffspring)->f < offspring[i].f)
            *bestOffspring = &offspring[i];
@@ -248,7 +249,7 @@ int main(){
 
     unsigned seed = time(NULL);
     srand(seed);
-   // srand(1694204629);
+//    srand( 1694207772);
 
     printf("Seed : %d\n",seed);
 
@@ -258,11 +259,14 @@ int main(){
     //printf("Best Individual:  fitness -> %d   weight -> %d\n",bestPop->f,bestPop->w);
 
     for (int i = 0; i < MAX_GENERATIONS; i++){
-        selection(pop,parents);
-        crossover(pop,parents,offspring,&bestOffspring,&worstOffspring,inst);
+       printf(">>>>> %d\n",i);
+       selection(pop,parents);
+       crossover(pop,parents,offspring,&bestOffspring,&worstOffspring,inst);
        updatedPop(&pop,&offspring);
-    }
-    printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
-    printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
- 
+       printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
+       printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
+       }
+    printf("Seed : %d\n",seed);
+
+
 }
