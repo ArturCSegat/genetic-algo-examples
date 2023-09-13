@@ -232,24 +232,56 @@ void crossover(Individual *pop, int *parents, Individual * offspring, Individual
     }
 }
 
-void updatedPop(Individual **pop, Individual **offspring){
-      Individual * aux;
-      aux = *pop;
-      *pop = *offspring;
-      *offspring = aux;
+void updatedPop(Individual **pop, Individual **offspring, Individual ** worstOffspring, Individual ** bestPop){
+    
+    if ((*worstOffspring)->f < (*bestPop)->f) {
 
-   }
+        printf("copied: ");
+        printf("Indivíduo bom = ");
+        for(int j = 0; j < INST_SIZE; j++){
+            printf("%d ", (*bestPop)->crom[j]);
+        }     
+        printf("   fitness = %d   peso = %d \n", (*bestPop)->f , (*bestPop)->w);     
+
+        printf("to: ");
+        printf("Indivíduo ruim = ");
+        for(int j = 0; j < INST_SIZE; j++){
+            printf("%d ", (*worstOffspring)->crom[j]);
+        }     
+        printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
+
+        // deep copy the old best into the new worst
+        for (int i = 0; i < INST_SIZE; i++) {
+            (*worstOffspring)->crom[i] = (*bestPop)->crom[i];
+        }
+        (*worstOffspring)->f = (*bestPop)->f;
+        (*worstOffspring)->w = (*bestPop)->w;
+
+        printf("novo Indivíduo ruim = ");
+        for(int j = 0; j < INST_SIZE; j++){
+            printf("%d ", (*worstOffspring)->crom[j]);
+        }     
+        printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
+    }
+
+    Individual * aux;
+    aux = *pop;
+    *pop = *offspring;
+    *offspring = aux;
+
+}
 
 int main(){
 
     int ** inst = readInstance();
     int parents[POP_SIZE]; 
     Individual * offspring = malloc(sizeof(Individual)*POP_SIZE);
+    // discutir o por que de ser Individual* ao invés de Individual
     Individual *bestPop, *bestOffspring, *worstOffspring;
 
-    unsigned seed = time(NULL);
+    int seed =  1694207772;
+    // unsigned seed = time(NULL);
     srand(seed);
-//    srand( 1694207772);
 
     printf("Seed : %d\n",seed);
 
@@ -262,7 +294,7 @@ int main(){
        printf(">>>>> %d\n",i);
        selection(pop,parents);
        crossover(pop,parents,offspring,&bestOffspring,&worstOffspring,inst);
-       updatedPop(&pop,&offspring);
+       updatedPop(&pop,&offspring, &worstOffspring, &bestPop);
        printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
        printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
        }
