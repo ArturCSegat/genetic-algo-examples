@@ -4,15 +4,15 @@
 #include <limits.h>
 
 #define POP_SIZE 100
-#define MAX_GENERATIONS 40
+#define MAX_GENERATIONS 1000
 #define TOURNAMENT_SIZE 3 
-#define MAX_CAPACITY 20 // kg
-#define INST_SIZE 10
 #define MUT_DIVIDENDO 1
 #define MUT_DIVISOR 100  // jeito improvisado de representar 0.01
-
 #define F  0
 #define W  1
+
+#define MAX_CAPACITY 20 // kg
+#define INST_SIZE 10
 
 typedef struct {
     int crom[INST_SIZE];
@@ -22,17 +22,18 @@ typedef struct {
 
 int checkSolution(Individual *ind,int ** inst){
    int testW = 0;
+
    for(int i = 0 ; i < INST_SIZE; i++){
       testW += ind->crom[i] ? inst[W][i] : 0;
-      }
+   }
 
-   if(ind->w != testW){
-      printf("ERRO no calculo da capacidade\n");
+   if(ind->w != testW || testW > MAX_CAPACITY){
+      printf("ERRO no calculo da capacidade  = %d \n",ind->w);
       return 0;
-      } 
+   } 
 
    return 1;
-   }
+}
 
 Individual *  create_pop(int ** inst, Individual **bestPop){
     int lista[INST_SIZE],aux,pos;
@@ -169,51 +170,47 @@ void repairOffspring(Individual *unfea, Individual *fea, int ** inst){
     }while (g < INST_SIZE && unfea->w > MAX_CAPACITY);
   
     while (unfea->w > MAX_CAPACITY){
-        for(g = 0; !(unfea->crom[g]); g++);
-        int cheap = g;
-        for(g++; g < INST_SIZE; g++){
-            if(unfea->crom[g] &&  inst[F][g] < inst[F][cheap])
-                cheap = g;
-        }
-        unfea->crom[cheap] = 0;
-        unfea->f -= inst[F][cheap];
-        unfea->w -= inst[W][cheap];
+       for(g = 0; !(unfea->crom[g]); g++);
+       int cheap = g;
+       for(g++; g < INST_SIZE; g++){
+          if(unfea->crom[g] &&  inst[F][g] < inst[F][cheap])
+             cheap = g;
+       }
+       unfea->crom[cheap] = 0;
+       unfea->f -= inst[F][cheap];
+       unfea->w -= inst[W][cheap];
     }
 
 }
 
-void mutate(Individual * ind1, Individual * ind2, int ** inst) {
-    for (int i = 0; i < INST_SIZE; i++) {
-        int shot = rand() % MUT_DIVISOR;
-        if (shot <= MUT_DIVIDENDO) {
-            if(!ind1->crom[i]) {
-                ind1->crom[i] = 1;
-                ind1->f += inst[F][i];
-                ind1->w += inst[W][i];
-            } else {
-                ind1->crom[i] = 0;
-                ind1->f -= inst[F][i];
-                ind1->w -= inst[W][i];
-            }
-        }
+void mutate(Individual * ind, int ** inst) {
 
-        shot = rand() % MUT_DIVISOR;
-        if (shot <= MUT_DIVIDENDO) {
-            if(!ind2->crom[i]) {
-                ind2->crom[i] = 1;
-                ind2->f += inst[F][i];
-                ind2->w += inst[W][i];
-            } else {
-                ind2->crom[i] = 0;
-                ind2->f -= inst[F][i];
-                ind2->w -= inst[W][i];
-            }
-        }
-    }
+   int muta = rand() % INST_SIZE;
+   if (ind->crom[muta] ){
+      ind->crom[muta] = 0;
+      ind->f -= inst[F][muta];
+      ind->w -= inst[W][muta];
+   }else{
+      ind->crom[muta] = 1;
+      ind->f += inst[F][muta];
+      ind->w += inst[W][muta];
+   }
+   while (ind->w > MAX_CAPACITY){
+      int g;
+      for(g = 0; !(ind->crom[g]); g++);
+      int cheap = g;
+      for(g++; g < INST_SIZE; g++){
+         if(ind->crom[g] &&  inst[F][g] < inst[F][cheap])
+            cheap = g;
+      }
+      ind->crom[cheap] = 0;
+      ind->f -= inst[F][cheap];
+      ind->w -= inst[W][cheap];
+   }
 }
 
 void crossover(Individual *pop, int *parents, Individual * offspring, Individual **bestOffspring, Individual **worstOffspring,  int ** inst){
-    int pcut,k;
+    int pcut,k,shot;
 
     *bestOffspring = &offspring[0];
     *worstOffspring = &offspring[0];
@@ -244,21 +241,25 @@ void crossover(Individual *pop, int *parents, Individual * offspring, Individual
             offspring[i+1].f += offspring[i+1].crom[k] ? inst[F][k] : 0;
             offspring[i+1].w += offspring[i+1].crom[k] ? inst[W][k] : 0;
         }
-        
-        mutate(&offspring[i], &offspring[i+1], inst);
 
-        if(offspring[i].w > MAX_CAPACITY) 
-            repairOffspring(&offspring[i],&offspring[i+1],inst);
-        else if(offspring[i+1].w > MAX_CAPACITY)
-            repairOffspring(&offspring[i+1],&offspring[i],inst);
+        if(offspring[i].w > MAX_CAPACITY){ 
+           repairOffspring(&offspring[i],&offspring[i+1],inst);
+        }else if(offspring[i+1].w > MAX_CAPACITY){
+           repairOffspring(&offspring[i+1],&offspring[i],inst);
+        }    
+
+        shot = rand() % MUT_DIVISOR;
+        if (shot <= MUT_DIVIDENDO)  mutate(&offspring[i], inst);
+        shot = rand() % MUT_DIVISOR;
+        if (shot <= MUT_DIVIDENDO)  mutate(&offspring[i+1], inst);
 
 
-        printf("\n\n");
+        // printf("\n\n");
 
         if(!checkSolution(&(offspring[i]),inst))
-         exit(0);
+           exit(0);
         if(!checkSolution(&(offspring[i+1]),inst))
-         exit(0);
+           exit(0);
 
 
         if((*bestOffspring)->f < offspring[i].f)
@@ -279,19 +280,19 @@ void updatedPop(Individual **pop, Individual **offspring, Individual ** worstOff
     
     if ((*worstOffspring)->f < (*bestPop)->f) {
 
-        printf("copied: ");
-        printf("Indivíduo bom = ");
-        for(int j = 0; j < INST_SIZE; j++){
-            printf("%d ", (*bestPop)->crom[j]);
-        }     
-        printf("   fitness = %d   peso = %d \n", (*bestPop)->f , (*bestPop)->w);     
+        //printf("copied: ");
+        //printf("Indivíduo bom = ");
+        //for(int j = 0; j < INST_SIZE; j++){
+        //    printf("%d ", (*bestPop)->crom[j]);
+        //}     
+        //printf("   fitness = %d   peso = %d \n", (*bestPop)->f , (*bestPop)->w);     
 
-        printf("to: ");
-        printf("Indivíduo ruim = ");
-        for(int j = 0; j < INST_SIZE; j++){
-            printf("%d ", (*worstOffspring)->crom[j]);
-        }     
-        printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
+        //printf("to: ");
+        //printf("Indivíduo ruim = ");
+        //for(int j = 0; j < INST_SIZE; j++){
+        //    printf("%d ", (*worstOffspring)->crom[j]);
+        //}     
+        //printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
 
         // deep copy the old best into the new worst
         for (int i = 0; i < INST_SIZE; i++) {
@@ -300,11 +301,11 @@ void updatedPop(Individual **pop, Individual **offspring, Individual ** worstOff
         (*worstOffspring)->f = (*bestPop)->f;
         (*worstOffspring)->w = (*bestPop)->w;
 
-        printf("novo Indivíduo ruim = ");
-        for(int j = 0; j < INST_SIZE; j++){
-            printf("%d ", (*worstOffspring)->crom[j]);
-        }     
-        printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
+       // printf("novo Indivíduo ruim = ");
+       // for(int j = 0; j < INST_SIZE; j++){
+       //     printf("%d ", (*worstOffspring)->crom[j]);
+       // }     
+       // printf("   fitness = %d   peso = %d \n", (*worstOffspring)->f , (*worstOffspring)->w);     
     }
 
     Individual * aux;
@@ -322,9 +323,9 @@ int main(){
     // discutir o por que de ser Individual* ao invés de Individual
     Individual *bestPop, *bestOffspring, *worstOffspring;
 
-    int seed =  1694207772;
-    // unsigned seed = time(NULL);
-    srand(seed);
+//    int seed =  1694207772;
+     unsigned seed = time(NULL);
+  //  srand(seed);
 
     printf("Seed : %d\n",seed);
 
@@ -341,7 +342,7 @@ int main(){
        printf("Best Individual:  fitness -> %d   weight -> %d\n",bestOffspring->f,bestOffspring->w);
        printf("Worst Individual: fitness -> %d   weight -> %d\n\n",worstOffspring->f,worstOffspring->w);
        }
-    printf("Seed : %d\n",seed);
+    //printf("Seed : %d\n",seed);
     
     free(pop);
     free(offspring);
