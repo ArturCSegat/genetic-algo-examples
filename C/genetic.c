@@ -1,21 +1,118 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <limits.h>
 
 #define POP_SIZE 100
-#define MAX_GENERATIONS 1000
-#define TOURNAMENT_SIZE 3 
+#define MAX_GENERATIONS 50
+#define TOURNAMENT_SIZE 3
 #define MUT_DIVIDENDO 1
 #define MUT_DIVISOR 100  // jeito improvisado de representar 0.01
+
 #define F  0
 #define W  1
 
-#define MAX_CAPACITY 20 // kg
-#define INST_SIZE 10
+#define file "f4_l-d_kp_4_11" 
+
+int cap_low(const char * low_dimensional_file_name) {
+    char * n_start = strstr(low_dimensional_file_name, "kp_");
+    if (n_start == NULL) {
+        return -1;
+    }
+    n_start += 3;   
+    
+    char * cap_start = strchr(n_start, '_');
+    if (cap_start == NULL) {
+        return -1;
+    }
+    cap_start += 1;
+
+    char cap_buf[7];
+    memset(cap_buf, 0, sizeof cap_buf);
+
+    int off = 0;
+    for(;*cap_start != '\0' && off < 7; cap_start += 1) {
+        cap_buf[off] = *cap_start;
+        off += 1;
+    }
+
+    return atoi(cap_buf);
+}
+
+int cap_high(const char * large_scale_file_name) {
+    char * minus_name = strstr(large_scale_file_name, "knapPI_");
+    if (minus_name == NULL) {
+        return -1;
+    }
+
+    minus_name += 7;
+    // skip version/junk
+    minus_name += 2;
+    char * cap_start =  strchr(minus_name, '_');
+    if (cap_start == NULL) {
+        return -1;
+    }
+    cap_start += 1;
+
+    char cap_buf[7];
+    memset(cap_buf, 0, sizeof cap_buf);
+
+    int off = 0;
+    for(;*cap_start != '_' && off < 7; cap_start += 1) {
+        cap_buf[off] = *cap_start;
+        off += 1;
+    }
+
+    return atoi(cap_buf);
+}
+
+int inst_size_high(const char * file_name) {
+    char * minus_name = strstr(file_name, "knapPI_");
+    if (minus_name == NULL) {
+        return -1;
+    }
+
+    minus_name += 7;
+    // skip version/junk
+    minus_name += 2;
+
+    char size_buf[7];
+    memset(size_buf, 0, sizeof size_buf);
+
+    int off = 0;
+    for(;*minus_name != '_' && off < 7; minus_name += 1) {
+        size_buf[off] = *minus_name;
+        off += 1;
+    }
+
+    return atoi(size_buf);
+}
+
+int inst_size_low(const char * file_name) {
+    char * minus_name = strstr(file_name, "kp_");
+    if (minus_name == NULL) {
+        return -1;
+    }
+    minus_name += 3;   
+
+    char size_buf[7];
+    memset(size_buf, 0, sizeof size_buf);
+
+    int off = 0;
+    for(;*minus_name != '_' && off < 7; minus_name += 1) {
+        size_buf[off] = *minus_name;
+        off += 1;
+    }
+
+    return atoi(size_buf);
+}
+
+int INST_SIZE;
+int MAX_CAPACITY;
 
 typedef struct {
-    int crom[INST_SIZE];
+    int * crom;
     int f;
     int w;
 }Individual;
@@ -38,6 +135,9 @@ int checkSolution(Individual *ind,int ** inst){
 Individual *  create_pop(int ** inst, Individual **bestPop){
     int lista[INST_SIZE],aux,pos;
     Individual * pop = malloc(sizeof(Individual)*POP_SIZE);
+    for (int i = 0; i < POP_SIZE; i++) {
+        pop[i].crom = malloc(INST_SIZE * sizeof(int));
+    }
 
     *bestPop = &pop[0];
 
@@ -59,7 +159,6 @@ Individual *  create_pop(int ** inst, Individual **bestPop){
             aux = lista[pos];
             lista[pos] = lista[INST_SIZE-j-1];
             lista[INST_SIZE-j-1] = aux;
-            
         }
 
         if((*bestPop)->f < pop[i].f)
@@ -68,22 +167,64 @@ Individual *  create_pop(int ** inst, Individual **bestPop){
     return pop;
 }
 
-int ** readInstance(){
+int ** readInstance(const char * file_name){
     // ==========================   cria instancia  ============================
     int ** inst = malloc(sizeof(int *)*2);
     inst[F] = malloc(sizeof(int)*INST_SIZE);  // lucro
     inst[W] = malloc(sizeof(int)*INST_SIZE);  // peso
+    
+    FILE * f_ptr = fopen(file_name, "r");
 
-    inst[F][0] =  7;  inst[W][0] = 10;
-    inst[F][1] =  3;  inst[W][1] =  5;
-    inst[F][2] =  1;  inst[W][2] =  2;
-    inst[F][3] =  9;  inst[W][3] = 11;
-    inst[F][4] = 10;  inst[W][4] = 15; 
-    inst[F][5] =  5;  inst[W][5] =  7;
-    inst[F][6] =  7;  inst[W][6] =  7;
-    inst[F][7] =  9;  inst[W][7] =  6;
-    inst[F][8] = 10;  inst[W][8] =  8; 
-    inst[F][9] =  7;  inst[W][9] = 10;
+    if (f_ptr == NULL) {
+        printf("file error");
+        exit(1);
+    }
+
+    char cr;
+
+    char val_buf[6];
+    int v_idx = 0;
+    char wei_buf[6];
+    int w_idx = 0;
+
+    char * reading = val_buf;
+    int * idx_ptr = &v_idx;
+    
+    int  i = 0;
+    while((cr = fgetc(f_ptr)) != EOF && i < INST_SIZE) {
+        if (*idx_ptr >= 6 || cr == '\r') {
+            continue;
+        }
+
+        if (cr == ' ') {
+            reading = wei_buf;
+            idx_ptr = &w_idx;
+
+            if (*idx_ptr != 0) {
+                break;
+            }
+
+
+            continue;
+        }
+
+        if (cr == '\n') {
+            inst[W][i] = atoi(wei_buf);
+            inst[F][i] = atoi(val_buf);
+            i += 1;
+
+            memset(val_buf, 0, sizeof(val_buf));
+            memset(wei_buf, 0, sizeof(wei_buf));
+            v_idx = 0;
+            w_idx = 0;
+            reading = val_buf;
+            idx_ptr = &v_idx;
+            continue;
+        }
+
+        reading[*idx_ptr] = cr;
+        *idx_ptr += 1;
+    }
 
     return inst;
 }
@@ -315,11 +456,34 @@ void updatedPop(Individual **pop, Individual **offspring, Individual ** worstOff
 
 }
 
-int main(){
+int main(int argc, char ** argv){
+    if (argc != 2) {
+        printf("error: should provide 1 (ONE) file to read\nusage: %s filename", argv[0]);
+        exit(1);
+    }    
 
-    int ** inst = readInstance();
+    MAX_CAPACITY = cap_high(argv[1]);
+    if (MAX_CAPACITY == -1  || MAX_CAPACITY == 0){
+        MAX_CAPACITY = cap_low(argv[1]);
+    }
+    INST_SIZE = inst_size_high(argv[1]);
+    if (INST_SIZE == -1  || INST_SIZE == 0){
+        INST_SIZE = inst_size_low(argv[1]);
+    }
+
+    if (MAX_CAPACITY == - 1 || INST_SIZE == 0) {
+        printf("bad file\n");
+        exit(1);
+    }
+
+    printf("c: %d, i: %d\n", MAX_CAPACITY, INST_SIZE);
+
+    int ** inst = readInstance(argv[1]);
     int parents[POP_SIZE]; 
     Individual * offspring = malloc(sizeof(Individual)*POP_SIZE);
+    for (int i = 0; i < POP_SIZE; i++) {
+        offspring[i].crom = malloc(INST_SIZE * sizeof(int));
+    }
     // discutir o por que de ser Individual* ao invés de Individual
     Individual *bestPop, *bestOffspring, *worstOffspring;
 
@@ -344,10 +508,13 @@ int main(){
        }
     //printf("Seed : %d\n",seed);
     
+    for (int i = 0; i < POP_SIZE; i++) {
+        free(pop[i].crom);
+        free(offspring[i].crom);
+    }
     free(pop);
     free(offspring);
     free(inst[F]);
     free(inst[W]);
     free(inst);
-
 }
