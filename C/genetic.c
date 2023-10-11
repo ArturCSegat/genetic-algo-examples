@@ -13,101 +13,6 @@
 #define F  0
 #define W  1
 
-#define file "f4_l-d_kp_4_11" 
-
-int cap_low(const char * low_dimensional_file_name) {
-    char * n_start = strstr(low_dimensional_file_name, "kp_");
-    if (n_start == NULL) {
-        return -1;
-    }
-    n_start += 3;   
-    
-    char * cap_start = strchr(n_start, '_');
-    if (cap_start == NULL) {
-        return -1;
-    }
-    cap_start += 1;
-
-    char cap_buf[7];
-    memset(cap_buf, 0, sizeof cap_buf);
-
-    int off = 0;
-    for(;*cap_start != '\0' && off < 7; cap_start += 1) {
-        cap_buf[off] = *cap_start;
-        off += 1;
-    }
-
-    return atoi(cap_buf);
-}
-
-int cap_high(const char * large_scale_file_name) {
-    char * minus_name = strstr(large_scale_file_name, "knapPI_");
-    if (minus_name == NULL) {
-        return -1;
-    }
-
-    minus_name += 7;
-    // skip version/junk
-    minus_name += 2;
-    char * cap_start =  strchr(minus_name, '_');
-    if (cap_start == NULL) {
-        return -1;
-    }
-    cap_start += 1;
-
-    char cap_buf[7];
-    memset(cap_buf, 0, sizeof cap_buf);
-
-    int off = 0;
-    for(;*cap_start != '_' && off < 7; cap_start += 1) {
-        cap_buf[off] = *cap_start;
-        off += 1;
-    }
-
-    return atoi(cap_buf);
-}
-
-int inst_size_high(const char * file_name) {
-    char * minus_name = strstr(file_name, "knapPI_");
-    if (minus_name == NULL) {
-        return -1;
-    }
-
-    minus_name += 7;
-    // skip version/junk
-    minus_name += 2;
-
-    char size_buf[7];
-    memset(size_buf, 0, sizeof size_buf);
-
-    int off = 0;
-    for(;*minus_name != '_' && off < 7; minus_name += 1) {
-        size_buf[off] = *minus_name;
-        off += 1;
-    }
-
-    return atoi(size_buf);
-}
-
-int inst_size_low(const char * file_name) {
-    char * minus_name = strstr(file_name, "kp_");
-    if (minus_name == NULL) {
-        return -1;
-    }
-    minus_name += 3;   
-
-    char size_buf[7];
-    memset(size_buf, 0, sizeof size_buf);
-
-    int off = 0;
-    for(;*minus_name != '_' && off < 7; minus_name += 1) {
-        size_buf[off] = *minus_name;
-        off += 1;
-    }
-
-    return atoi(size_buf);
-}
-
 int INST_SIZE;
 int MAX_CAPACITY;
 
@@ -170,8 +75,6 @@ Individual *  create_pop(int ** inst, Individual **bestPop){
 int ** readInstance(const char * file_name){
     // ==========================   cria instancia  ============================
     int ** inst = malloc(sizeof(int *)*2);
-    inst[F] = malloc(sizeof(int)*INST_SIZE);  // lucro
-    inst[W] = malloc(sizeof(int)*INST_SIZE);  // peso
     
     FILE * f_ptr = fopen(file_name, "r");
 
@@ -191,7 +94,8 @@ int ** readInstance(const char * file_name){
     int * idx_ptr = &v_idx;
     
     int  i = 0;
-    while((cr = fgetc(f_ptr)) != EOF && i < INST_SIZE) {
+    int first = 1;
+    while((cr = fgetc(f_ptr)) != EOF) {
         if (*idx_ptr >= 6 || cr == '\r') {
             continue;
         }
@@ -209,6 +113,25 @@ int ** readInstance(const char * file_name){
         }
 
         if (cr == '\n') {
+            if (first) {
+                printf("ffffffff\n");
+                INST_SIZE = atoi(val_buf);
+                MAX_CAPACITY = atoi(wei_buf);
+                           
+                inst[F] = malloc(sizeof(int)*INST_SIZE);  // lucro
+                inst[W] = malloc(sizeof(int)*INST_SIZE);  // peso
+                i += 1;
+
+                memset(val_buf, 0, sizeof(val_buf));
+                memset(wei_buf, 0, sizeof(wei_buf));
+                v_idx = 0;
+                w_idx = 0;
+                reading = val_buf;
+                idx_ptr = &v_idx;
+                first = 0;
+                continue;
+            }
+            
             inst[W][i] = atoi(wei_buf);
             inst[F][i] = atoi(val_buf);
             i += 1;
@@ -462,23 +385,9 @@ int main(int argc, char ** argv){
         exit(1);
     }    
 
-    MAX_CAPACITY = cap_high(argv[1]);
-    if (MAX_CAPACITY == -1  || MAX_CAPACITY == 0){
-        MAX_CAPACITY = cap_low(argv[1]);
-    }
-    INST_SIZE = inst_size_high(argv[1]);
-    if (INST_SIZE == -1  || INST_SIZE == 0){
-        INST_SIZE = inst_size_low(argv[1]);
-    }
-
-    if (MAX_CAPACITY == - 1 || INST_SIZE == 0) {
-        printf("bad file\n");
-        exit(1);
-    }
+    int ** inst = readInstance(argv[1]);
 
     printf("c: %d, i: %d\n", MAX_CAPACITY, INST_SIZE);
-
-    int ** inst = readInstance(argv[1]);
     int parents[POP_SIZE]; 
     Individual * offspring = malloc(sizeof(Individual)*POP_SIZE);
     for (int i = 0; i < POP_SIZE; i++) {
